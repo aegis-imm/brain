@@ -6,6 +6,15 @@
 
 The vault is yours. The plugin only stages writes. You commit on your own schedule.
 
+## Objectives
+
+- **💸 Save Claude tokens.** Vault-first lookup pulls answers from your own notes (`05-notes/permanent/`, `10-snippets/`, `11-debugging/`) before falling back to the model. 200 tokens of your compressed notes beats 2000 tokens of regenerated answer. Your vault becomes a personal knowledge cache that pays back every session.
+- **🧠 Update your Obsidian brain alongside coding work.** No context-switch to a separate note app. Capture decisions, bugs, and snippets while you're in flow; flush to the vault with one command (`/brain:brain save`) when you're done.
+- **📝 Stay in capture-first mode.** The plugin holds session context in memory and writes nothing until you say so. No surprise edits, no half-baked notes scattered around.
+- **🗂️ Enforce structure without thinking about it.** PARA folders, Zettelkasten permanent notes, ADRs, debugging logs, area changelogs — all routed automatically based on what you captured. You write content; the plugin handles filing.
+- **🔒 Never touch your git history.** Staging via `Edit`/`Write` only. The plugin never runs `git add`, `git commit`, or `git push` in the vault. You commit when you're ready to.
+- **🔁 Cross-session memory.** What you capture today shows up as a citation in next week's answer. The vault grows; future-you benefits.
+
 ## Install
 
 ```text
