@@ -1,0 +1,122 @@
+name: validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate JSON manifests
+        run: |
+          python3 - <<'EOF'
+          import json, sys, pathlib
+
+          errors = []
+
+          def load(path, required_fields):
+              try:
+                  data = json.loads(pathlib.Path(path).read_text())
+              except FileNotFoundError:
+                  errors.append(f"{path}: file not found")
+                  return None
+              except json.JSONDecodeError as e:
+                  errors.append(f"{path}: invalid JSON — {e}")
+                  return None
+              for field in required_fields:
+                  if field not in data:
+                      errors.append(f"{path}: missing required field '{field}'")
+              return data
+
+          plugin = load(".claude-plugin/plugin.json",
+                        ["name", "version", "description"])
+          market = load(".claude-plugin/marketplace.json",
+                        ["name", "owner", "plugins"])
+
+          if plugin and not plugin["name"].replace("-", "").isalnum():
+              errors.append("plugin.json: name must be kebab-case alphanumeric")
+
+          if market:
+              if not isinstance(market.get("plugins"), list) or not market["plugins"]:
+                  errors.append("marketplace.json: plugins must be a non-empty array")
+              else:
+                  for i, p in enumerate(market["plugins"]):
+                      if "name" not in p:
+                          errors.append(f"marketplace.json: plugins[{i}] missing 'name'")
+                      if "source" not in p:
+                          errors.append(f"marketplace.json: plugins[{i}] missing 'source'")
+
+          if errors:
+              print("\n".join(f"❌ {e}" for e in errors))
+              sys.exit(1)
+          print("✔ JSON manifests valid")
+          EOF
+
+      - name: Validate skill + command frontmatter
+        run: |
+          python3 - <<'EOF'
+          import sys, pathlib, re
+
+          errors = []
+          fm_re = re.compile(r"^---\n(.*?)\n---", re.DOTALL)
+
+          def check(path, required_keys):
+              text = pathlib.Path(path).read_text()
+              m = fm_re.match(text)
+              if not m:
+                  errors.append(f"{path}: missing YAML frontmatter")
+                  return
+              fm = m.group(1)
+              for key in required_keys:
+                  if not re.search(rf"^{key}:", fm, re.MULTILINE):
+                      errors.append(f"{path}: frontmatter missing '{key}'")
+
+          # Skills require name + description
+          for p in pathlib.Path("skills").rglob("SKILL.md"):
+              check(str(p), ["name", "description"])
+
+          # Commands require description
+          for p in pathlib.Path("commands").glob("*.md"):
+              check(str(p), ["description"])
+
+          if errors:
+              print("\n".join(f"❌ {e}" for e in errors))
+              sys.exit(1)
+          print("✔ Skill + command frontmatter valid")
+          EOF
+
+      - name: Check templates exist
+        run: |
+          required=(
+            daily-note-template.md
+            work-project-template.md
+            side-project-template.md
+            permanent-note-template.md
+            debugging-log-template.md
+            adr-template.md
+            meeting-note-template.md
+            1on1-template.md
+            code-snippet-template.md
+          )
+          missing=0
+          for f in "${required[@]}"; do
+            if [ ! -f "skills/brain/templates/$f" ]; then
+              echo "❌ missing template: $f"
+              missing=1
+            fi
+          done
+          if [ $missing -eq 0 ]; then
+            echo "✔ all 9 templates present"
+          fi
+          exit $missing
+
+      - name: Check defaults exist
+        run: |
+          test -f skills/brain/defaults/system-rules.md \
+            && echo "✔ default system-rules.md present" \
+            || (echo "❌ missing skills/brain/defaults/system-rules.md" && exit 1)
