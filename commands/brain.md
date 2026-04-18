@@ -21,6 +21,7 @@ Parse `$ARGUMENTS` as `<subcommand> [rest...]`. Dispatch per the table below by 
 | `meeting <topic>` | File a meeting note per **Meeting + Interview Filing Rules** in the skill |
 | `interview <stakeholder>` | File a requirements interview note (mom-test discipline) |
 | `1on1 <name>` | File a 1:1 note under the current area's `1on1/` folder |
+| `quiet` | Suppress vault-first lookup for the rest of the session (advisor + retrieval go silent) |
 
 **Vault path resolution:** `$BRAIN_VAULT` env var first, else `~/brain`. If the vault doesn't exist and the subcommand requires it, suggest `/brain init`.
 

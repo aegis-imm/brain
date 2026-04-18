@@ -63,6 +63,19 @@ Then restart Claude Code (or run `/reload-plugins`).
 | `meeting <topic>` | File a meeting note under the current area |
 | `interview <stakeholder>` | File a requirements interview note (mom-test discipline) |
 | `1on1 <name>` | File a 1:1 note under the current area's `1on1/` folder |
+| `quiet` | Suppress vault-first lookup for the rest of the session |
+
+## Vault-first lookup (token-saver)
+
+When you ask a technical question (rust, axum, oracle, debugging, etc.), the plugin searches your vault **before** answering from model knowledge:
+
+1. Greps `05-notes/permanent/`, `10-snippets/<lang>/`, `11-debugging/`, `02-areas/*/<area>-patterns.md`, `12-adr/`
+2. If matches → leads the answer with your own notes, cites the file path
+3. If no matches → answers normally and offers to capture the answer with `/brain:brain note`
+
+**Why:** vault notes are already compressed by you. Pulling 200 tokens of your own notes beats 2000 tokens of model regen. Over time, your vault becomes a personal knowledge cache.
+
+To suppress lookup for a session: `/brain:brain quiet`.
 
 ## What gets captured
 

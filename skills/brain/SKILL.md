@@ -32,6 +32,55 @@ At the first user message in a session, if the current working directory is **no
 
 If CWD is inside the vault, skip the announcement — the user is editing the brain directly.
 
+## Vault-First Lookup
+
+**Before answering any technical question**, search the vault for prior knowledge. The user already paid the token cost to capture it — reuse instead of regenerate.
+
+### When to trigger
+
+Trigger lookup when the user asks a question that involves:
+- A programming language (`rust`, `typescript`, `python`, `go`, `sql`, etc.)
+- A framework (`axum`, `react`, `nextjs`, `django`, etc.)
+- A tool / domain (`oracle query`, `git rebase`, `docker compose`, `auth`, `payments`, etc.)
+- A debugging symptom (error message, stack trace, "why is X happening")
+- A "how do I" / "what's the best way to" / "remind me how" phrasing
+
+Skip lookup for: pure conversational replies, meta questions about the brain plugin itself, or when the user explicitly says "don't check the vault."
+
+### Lookup procedure
+
+1. **Extract keywords** from the question: language, framework, domain, error tokens.
+2. **Grep these paths** (in order, stop early if strong match found):
+   - `<vault>/05-notes/permanent/*.md` — atomic claims, evergreen
+   - `<vault>/10-snippets/<lang>/*.md` — reusable code blocks
+   - `<vault>/11-debugging/*.md` — past bugs with root cause + fix
+   - `<vault>/02-areas/*/*/<area>-patterns.md` — area-specific techniques
+   - `<vault>/12-adr/*.md` — past architectural decisions (if topic feels architectural)
+3. Use `Grep` with case-insensitive search, multiple keyword passes if needed.
+
+### How to answer
+
+- **If strong vault match found:**
+  - Lead the answer with vault content. Quote or paraphrase faithfully.
+  - **Always cite the source path**, e.g. *"From your `10-snippets/rust/parse-csv.md`:"*
+  - Add model knowledge only to fill gaps the vault doesn't cover. Mark clearly: *"(beyond your notes)"*
+- **If partial match found:**
+  - Combine: vault content first (cited), then model knowledge to complete.
+  - End with: *"Worth updating `<file>`? Run `/brain note <addition>` to capture."*
+- **If no match found:**
+  - Answer normally from model knowledge.
+  - If the answer was substantive (not trivial), end with: *"Worth saving? `/brain note <topic>`, or I can draft a snippet for `10-snippets/<lang>/`."*
+
+### Token discipline
+
+- Read only files that match. Don't slurp the whole vault.
+- Prefer `Grep` (returns matching lines) over `Read` (whole file) for the initial scan.
+- Read full file only when the snippet header / first match looks promising.
+
+### Opt-out
+
+If the user types `/brain quiet` or "skip vault" in a message, suppress vault lookup for the rest of the session. Re-enable on `/brain on` or explicit "check the vault."
+
 ## Buckets to Track (when `BRAIN=on`)
 
 Maintain an internal session log. **Do not write to the vault** until the user types `/brain save` or confirms at session end.
