@@ -26,35 +26,39 @@ Then restart Claude Code (or run `/reload-plugins`).
 
 ## First run
 
-1. **Pick a vault location.** Set `BRAIN_VAULT` in your shell (recommended), otherwise `~/brain` is used:
+Just run any `/brain` subcommand. The plugin will detect that the vault doesn't exist yet and walk you through setup automatically:
 
-   ```bash
-   export BRAIN_VAULT="$HOME/Documents/brain"   # or wherever
-   ```
+```text
+/brain:brain on
+```
 
-2. **Scaffold the vault** with the PARA folder structure and bundled templates:
+→ *"🧠 Vault not initialized. Running `/brain init` first. Create vault at `~/brain`? (yes / customize / no)"*
 
-   ```text
-   /brain:brain init
-   ```
+Reply `yes` to scaffold at the default, `customize` to pick another path, or set `BRAIN_VAULT` upfront:
 
-   This creates 15 folders, copies 9 templates into `08-templates/`, and seeds a default `99-meta/system-rules.md` (tag taxonomy, naming conventions, weekly review checklist).
+```bash
+export BRAIN_VAULT="$HOME/Documents/brain"   # optional
+```
 
-3. **(Optional) Initialize git in the vault** so you have history:
+The chosen path is saved to `~/.brainrc.json` so future sessions skip the prompt. Init creates 15 PARA folders, copies 9 templates into `08-templates/`, and seeds `99-meta/system-rules.md` (tag taxonomy, naming conventions, weekly review checklist).
 
-   ```bash
-   cd "$BRAIN_VAULT" && git init
-   ```
+**(Optional) Initialize git in the vault** so you have history:
 
-4. **Start a session.** On the first message of any project, the plugin asks:
+```bash
+cd "$BRAIN_VAULT" && git init
+```
 
-   > 🧠 Brain detected at `<vault-path>`. Log this session? (yes / no / later)
+After init runs, the original subcommand executes — so `/brain on` will both scaffold and start tracking in one go.
 
-   Reply `yes` to start tracking. Work normally. When done:
+**Start a session.** On the first message of any project, the plugin asks:
 
-   ```text
-   /brain:brain save
-   ```
+> 🧠 Brain detected at `<vault-path>`. Log this session? (yes / no / later)
+
+Reply `yes` to start tracking. Work normally. When done:
+
+```text
+/brain:brain save
+```
 
 ## Command reference
 
@@ -152,9 +156,11 @@ Edit `<vault>/99-meta/system-rules.md` to extend or change the taxonomy.
 
 ## Configuration
 
-| Env var | Default | Purpose |
+| Source | Default | Purpose |
 |---|---|---|
-| `BRAIN_VAULT` | `~/brain` | Absolute path to your vault root |
+| `$BRAIN_VAULT` env var | — | Highest priority. Set in your shell rc to pin a vault path across sessions. |
+| `~/.brainrc.json` | — | Written by the init wizard: `{ "vault": "<absolute-path>" }`. Skip the prompt next time. |
+| Built-in default | `~/brain` | Used only if neither of the above is set. |
 
 ## Customizing templates
 

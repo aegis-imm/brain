@@ -12,10 +12,33 @@ Capture session context as you work, then flush to a PARA + Zettelkasten Obsidia
 Resolve the vault path in this order:
 
 1. `$BRAIN_VAULT` environment variable
-2. `~/brain` (default)
-3. If neither exists, prompt the user and offer to run `/brain init`.
+2. `~/.brainrc.json` → `{ "vault": "<absolute-path>" }` (written by the init wizard)
+3. `~/brain` (default fallback)
 
 **Never** write outside the resolved vault path. **Never** run `git commit`, `git push`, `git add`, or destructive git operations inside the vault — staging via `Edit`/`Write` only. The user owns the vault's git history.
+
+## First-Run Gate (mandatory init)
+
+**Every `/brain` subcommand except `init` must check vault readiness first.**
+
+A vault is considered **ready** when:
+- The resolved vault path exists as a directory, AND
+- `<vault>/99-meta/system-rules.md` exists (signals scaffold complete)
+
+If the vault is **not ready**, do this before executing the requested subcommand:
+
+1. Print: *"🧠 Vault not initialized. Running `/brain init` first."*
+2. Resolve candidate path (env → config file → default `~/brain`).
+3. Ask the user, one prompt:
+   > *"Create vault at `<path>`? (yes / customize / no)"*
+4. Branch:
+   - **yes** → run the **Init Procedure** below. After scaffold, save the path to `~/.brainrc.json` (only if not already set via `$BRAIN_VAULT`). Then continue with the original subcommand.
+   - **customize** → ask for absolute path. Validate it. Scaffold there. Save to `~/.brainrc.json`. Continue.
+   - **no** → abort the original subcommand. Print: *"Aborted. Run `/brain init` when ready."*
+
+**Special case:** if the directory exists and has PARA folders but no `system-rules.md`, treat as a partial install — offer to top up missing folders + seed `system-rules.md`, do not overwrite existing files.
+
+**`/brain init` itself** skips this gate and runs directly (it *is* the init).
 
 ## Session-Start Protocol
 
@@ -172,7 +195,7 @@ List every file written/edited. End with the literal line:
 
 ## Init Procedure (`/brain init`)
 
-Resolve vault path (env or default). If vault dir doesn't exist, ask the user to confirm creation at that path.
+Resolve vault path: `$BRAIN_VAULT` → `~/.brainrc.json` → ask user (default `~/brain`). If vault dir doesn't exist, ask the user to confirm creation at that path. After confirmation, persist the path to `~/.brainrc.json` if not already set via env var.
 
 Create folders if missing:
 
@@ -198,7 +221,7 @@ Copy bundled templates from `${CLAUDE_PLUGIN_ROOT}/skills/brain/templates/*.md` 
 
 Copy default `${CLAUDE_PLUGIN_ROOT}/skills/brain/defaults/system-rules.md` into `<vault>/99-meta/system-rules.md` (skip if exists).
 
-Print summary: dirs created, templates copied, system-rules location. Suggest the user `cd <vault> && git init` if not already a git repo.
+Print summary: dirs created, templates copied, system-rules location, config file path (if written). Suggest the user `cd <vault> && git init` if not already a git repo.
 
 ## Meeting + Interview Filing Rules
 

@@ -8,6 +8,8 @@ User invoked: `/brain $ARGUMENTS`
 
 Parse `$ARGUMENTS` as `<subcommand> [rest...]`. Dispatch per the table below by following the **brain skill** (loaded from `skills/brain/SKILL.md`).
 
+**First-run gate:** every subcommand except `init` must call the **First-Run Gate** in the skill before doing its work. If the vault is not initialized (no `<vault>/99-meta/system-rules.md`), the gate runs `init` first (with user confirmation), then proceeds.
+
 | Subcommand | Action |
 |---|---|
 | (empty) | Print usage: list all subcommands and current `BRAIN` flag state |
@@ -23,7 +25,7 @@ Parse `$ARGUMENTS` as `<subcommand> [rest...]`. Dispatch per the table below by 
 | `1on1 <name>` | File a 1:1 note under the current area's `1on1/` folder |
 | `quiet` | Suppress vault-first lookup for the rest of the session (advisor + retrieval go silent) |
 
-**Vault path resolution:** `$BRAIN_VAULT` env var first, else `~/brain`. If the vault doesn't exist and the subcommand requires it, suggest `/brain init`.
+**Vault path resolution:** `$BRAIN_VAULT` env var → `~/.brainrc.json` (`{"vault": "<path>"}`) → default `~/brain`. The init wizard persists the chosen path to `~/.brainrc.json` so future sessions skip the prompt.
 
 **Hard rule:** Never run `git add`, `git commit`, or `git push` in the vault. Staging via `Edit`/`Write` only.
 
