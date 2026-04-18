@@ -24,7 +24,8 @@ Parse `$ARGUMENTS` as `<subcommand> [rest...]`. Dispatch per the table below by 
 | `interview <stakeholder>` | File a requirements interview note (mom-test discipline) |
 | `1on1 <name>` | File a 1:1 note under the current area's `1on1/` folder |
 | `quiet` | Suppress vault-first lookup for the rest of the session (advisor + retrieval go silent) |
-| `search <query>` | Direct vault search via the index — top 5 cited matches |
+| `search <query>` | Lazy index search — `05-notes/permanent/` only, top 5 cited matches |
+| `dig <query>` | Deep search — all index entries (snippets, debugging, ADRs, area patterns) |
 | `promote <source>` | Promote a daily-note line or any text into a `05-notes/permanent/<slug>.md` |
 | `stats` | Print vault health dashboard (counts, pipeline, areas, growth) |
 | `reindex` | Rebuild `<vault>/99-meta/vault-index.json` from scratch |

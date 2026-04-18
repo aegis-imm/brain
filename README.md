@@ -8,7 +8,7 @@ The vault is yours. The plugin only stages writes. You commit on your own schedu
 
 ## Objectives
 
-- **💸 Save Claude tokens.** Vault-first lookup pulls answers from your own notes (`05-notes/permanent/`, `10-snippets/`, `11-debugging/`) before falling back to the model. 200 tokens of your compressed notes beats 2000 tokens of regenerated answer. Your vault becomes a personal knowledge cache that pays back every session.
+- **💸 Save Claude tokens (and the planet, a tiny bit).** Vault-first lookup pulls answers from your own notes before falling back to the model. The skill itself is compressed — verbose docs are split into `references/` files loaded only on demand. Lookup is **lazy by default** (one path, top 5 results); use `/brain:brain dig` for deep search when you actually need it. Cross-session, the vault becomes a personal knowledge cache that pays back every session.
 - **🧠 Update your Obsidian brain alongside coding work.** No context-switch to a separate note app. Capture decisions, bugs, and snippets while you're in flow; flush to the vault with one command (`/brain:brain save`) when you're done.
 - **📝 Stay in capture-first mode.** The plugin holds session context in memory and writes nothing until you say so. No surprise edits, no half-baked notes scattered around.
 - **🗂️ Enforce structure without thinking about it.** PARA folders, Zettelkasten permanent notes, ADRs, debugging logs, area changelogs — all routed automatically based on what you captured. You write content; the plugin handles filing.
@@ -81,7 +81,8 @@ Reply `yes` to start tracking. Work normally. When done:
 | `interview <stakeholder>` | File a requirements interview note (mom-test discipline) |
 | `1on1 <name>` | File a 1:1 note under the current area's `1on1/` folder |
 | `quiet` | Suppress vault-first lookup for the rest of the session |
-| `search <query>` | Direct vault search via the index — top 5 cited matches |
+| `search <query>` | Lazy index search — `05-notes/permanent/` only, top 5 cited matches |
+| `dig <query>` | Deep search — all index entries (snippets, debugging, ADRs, patterns) |
 | `promote <source>` | Promote a daily-note line or phrase into `05-notes/permanent/<slug>.md` |
 | `stats` | Vault health dashboard: counts, pipeline, areas, growth |
 | `reindex` | Rebuild `<vault>/99-meta/vault-index.json` from scratch |
