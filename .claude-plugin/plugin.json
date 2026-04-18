@@ -1,0 +1,12 @@
+{
+  "name": "brain",
+  "version": "0.1.0",
+  "description": "PARA + Zettelkasten second-brain integration for Claude Code. Capture session context and flush to an Obsidian vault.",
+  "author": {
+    "name": "Kiattipat Sukonthapong"
+  },
+  "homepage": "https://github.com/aegis-imm/brain",
+  "repository": "https://github.com/aegis-imm/brain",
+  "license": "MIT",
+  "keywords": ["second-brain", "para", "zettelkasten", "obsidian", "knowledge-management"]
+}
