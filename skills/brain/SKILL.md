@@ -58,6 +58,40 @@ At the first user message in a session, if the current working directory is **no
 
 If CWD is inside the vault, skip the announcement — the user is editing the brain directly.
 
+## Vault Index (performance cache)
+
+To make vault-first lookup fast, the plugin maintains a JSON index at `<vault>/99-meta/vault-index.json`. The index lets the skill find candidate notes via one file read instead of recursive `Grep` over hundreds of files.
+
+### Schema
+
+```json
+[
+  {
+    "path": "05-notes/permanent/idempotent-retries.md",
+    "title": "Idempotent retries",
+    "type": "permanent",
+    "tags": ["#type/permanent", "#domain/infra"],
+    "first_line": "Retries must be idempotent or you compound failures.",
+    "mtime": "2026-04-18T10:23:00Z"
+  }
+]
+```
+
+### Build / refresh rules
+
+- **Build** — `/brain reindex` walks the vault (skipping `00-inbox/`, `04-archive/`, `08-templates/`, `99-meta/`), parses YAML frontmatter for `title`/`type`/`tags`, captures the first non-frontmatter line, and writes the JSON.
+- **Refresh** — every `/brain save` auto-appends entries for any new files written that session. Modified files get their entry replaced.
+- **Stale check** — before vault-first lookup, compare index `mtime` against the vault directory `mtime`. If the directory is newer, print one-line nudge: *"🧠 Index stale — run `/brain reindex` to refresh."* Continue lookup using the stale index (no block).
+
+### How lookup uses it
+
+1. Read `vault-index.json` once.
+2. Token-match query keywords against `title`, `tags`, `first_line`.
+3. Rank by hit count + tag specificity (e.g. `#lang/rust` beats `#status/active`).
+4. Read top 1–3 full files via `Read` for the actual answer.
+
+This avoids reading every file in `05-notes/permanent/` per query.
+
 ## Vault-First Lookup
 
 **Before answering any technical question**, search the vault for prior knowledge. The user already paid the token cost to capture it — reuse instead of regenerate.
@@ -140,6 +174,10 @@ Recognize these in user messages (typed via `/brain <subcommand>` or in plain te
 | `meeting <topic>` | File a meeting note (see **Filing Rules** below) |
 | `interview <stakeholder>` | File a requirements interview note (mom-test discipline) |
 | `1on1 <name>` | File a 1:1 note |
+| `search <query>` | Direct vault search — returns top 5 matches with paths and snippets |
+| `promote <source>` | Promote a daily-note line or any text into a `05-notes/permanent/<slug>.md` |
+| `stats` | Print vault health dashboard (notes per area, inbox, stale projects, growth) |
+| `reindex` | Rebuild `<vault>/99-meta/vault-index.json` from scratch |
 
 ## Flush Procedure (`/brain save`)
 
@@ -196,6 +234,10 @@ List every file written/edited. End with the literal line:
 
 ### 9. **Do not** `git add`, `git commit`, or `git push` in the vault.
 
+### 10. Refresh the vault index
+
+Append/update entries in `<vault>/99-meta/vault-index.json` for every file written or modified this session. Do not full-rebuild — that's `/brain reindex`.
+
 ## Init Procedure (`/brain init`)
 
 Resolve vault path: `$BRAIN_VAULT` → `~/.brainrc.json` → ask user (default `~/brain`). If vault dir doesn't exist, ask the user to confirm creation at that path. After confirmation, persist the path to `~/.brainrc.json` if not already set via env var.
@@ -225,6 +267,86 @@ Copy bundled templates from `${CLAUDE_PLUGIN_ROOT}/skills/brain/templates/*.md` 
 Copy default `${CLAUDE_PLUGIN_ROOT}/skills/brain/defaults/system-rules.md` into `<vault>/99-meta/system-rules.md` (skip if exists).
 
 Print summary: dirs created, templates copied, system-rules location, config file path (if written). Suggest the user `cd <vault> && git init` if not already a git repo.
+
+## Search Procedure (`/brain search <query>`)
+
+1. Read `<vault>/99-meta/vault-index.json`. If missing, run `reindex` first.
+2. Tokenize `<query>`: lowercase, drop stopwords (`the`, `a`, `is`, `how`, `what`).
+3. Score each entry:
+   - +3 for token in `title`
+   - +2 for token in `tags` (exact tag match)
+   - +1 for token in `first_line`
+   - +1 for tag namespace match (`#lang/rust` when query has `rust`)
+4. Return top 5 sorted by score. Print as:
+   ```
+   1. [score] <title> — <path>
+      <first_line>
+   2. ...
+   ```
+5. Ask: *"Open any of these in full? (1–5 / no)"*. On selection, `Read` the file and print contents.
+
+If zero results: *"No matches in vault. Capture this question with `/brain note <topic>` so future-you finds it."*
+
+## Promote Procedure (`/brain promote <source>`)
+
+`<source>` can be:
+- A file path with line ref: `06-daily/2026-04-18.md#L42`
+- A bare phrase: `idempotent retries are necessary in distributed queues`
+
+Steps:
+
+1. If path+line: `Read` that line and ~5 lines of surrounding context.
+2. Suggest a slug: lowercase kebab-case from the first 4–6 content words.
+3. Create `<vault>/05-notes/permanent/<slug>.md` from `08-templates/permanent-note-template.md`. Pre-fill:
+   - `title` = humanized slug
+   - **Claim** = the source line (or phrase)
+   - **Source** = backlink to the daily note path
+4. If the source was a daily note, ask: *"Replace the original line in the daily note with `[[<slug>]]`? (y/n)"*. On `y`, edit the daily.
+5. Append the new file to `vault-index.json`.
+6. Print path + suggest two related notes (run a quick search using the slug words to find candidates).
+
+## Stats Procedure (`/brain stats`)
+
+Walk the vault and print a markdown dashboard:
+
+```
+## Vault stats — <date>
+
+**Volume**
+- Total notes: <n>
+- Permanent notes: <n>
+- Daily notes: <n> (streak: <days>)
+- Snippets: <n>
+- Debugging logs: <n>
+- ADRs: <n>
+
+**Pipeline**
+- Inbox unsorted: <n> ⚠ if >10
+- Active projects (work): <n>
+- Active projects (side): <n>
+- Stale projects (>30d no edit): <n> — list paths
+
+**Areas**
+| Area | Notes | Last update |
+|---|---|---|
+| <area> | <n> | <YYYY-MM-DD> |
+
+**Recent**
+- Last `/brain save`: <date>
+- Notes added this week: <n>
+- Permanent-note growth (30d): +<n>
+```
+
+Use `Glob` + file `mtime` for counts. Don't read file contents — fast scan only.
+
+## Reindex Procedure (`/brain reindex`)
+
+1. Walk `<vault>/**/*.md` excluding `00-inbox/`, `04-archive/`, `08-templates/`, `99-meta/`.
+2. For each file, parse YAML frontmatter (between leading `---` markers) for `title`, `type`, `tags`. Skip if no frontmatter.
+3. Extract first non-blank, non-frontmatter line as `first_line` (truncate to 200 chars).
+4. Stat for `mtime`.
+5. Write the array to `<vault>/99-meta/vault-index.json`.
+6. Print summary: *"Indexed N files in M ms. Skipped K files (no frontmatter)."*
 
 ## Meeting + Interview Filing Rules
 

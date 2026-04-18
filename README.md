@@ -81,6 +81,18 @@ Reply `yes` to start tracking. Work normally. When done:
 | `interview <stakeholder>` | File a requirements interview note (mom-test discipline) |
 | `1on1 <name>` | File a 1:1 note under the current area's `1on1/` folder |
 | `quiet` | Suppress vault-first lookup for the rest of the session |
+| `search <query>` | Direct vault search via the index — top 5 cited matches |
+| `promote <source>` | Promote a daily-note line or phrase into `05-notes/permanent/<slug>.md` |
+| `stats` | Vault health dashboard: counts, pipeline, areas, growth |
+| `reindex` | Rebuild `<vault>/99-meta/vault-index.json` from scratch |
+
+## Vault index (perf cache)
+
+The plugin maintains `<vault>/99-meta/vault-index.json` — a flat JSON cache of every note's path, title, tags, and first line. Vault-first lookup reads this once instead of grepping hundreds of files per query.
+
+- **Built by:** `/brain:brain reindex` (manual) and auto-appended on every `/brain:brain save`.
+- **Skipped folders:** `00-inbox/`, `04-archive/`, `08-templates/`, `99-meta/`.
+- **Stale detection:** if the vault directory `mtime` is newer than the index, you'll see a one-line nudge to reindex. Lookup still works on the stale index — no block.
 
 ## Vault-first lookup (token-saver)
 
