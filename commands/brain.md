@@ -8,7 +8,7 @@ User invoked: `/brain $ARGUMENTS`
 
 Parse `$ARGUMENTS` as `<subcommand> [rest...]`. Dispatch per the table below by following the **brain skill** (loaded from `skills/brain/SKILL.md`).
 
-**First-run gate:** every subcommand except `init` must call the **First-Run Gate** in the skill before doing its work. If the vault is not initialized (no `<vault>/99-meta/system-rules.md`), the gate runs `init` first (with user confirmation), then proceeds.
+**First-run gate:** every subcommand except `init` must call the **First-Run Gate** in the skill before doing its work. The gate refuses if (a) no vault path is defined (`$BRAIN_VAULT` env var or `~/.brainrc.json`) or (b) the path exists but isn't scaffolded. On refusal, the gate offers a one-tap *"Run `/brain init` now? (y/n)"* — answering `y` runs init then resumes the original subcommand; `n` aborts cleanly. Never silently scaffold from inside another subcommand.
 
 | Subcommand | Action |
 |---|---|

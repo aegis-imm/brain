@@ -17,28 +17,31 @@ Resolve the vault path in this order:
 
 **Never** write outside the resolved vault path. **Never** run `git commit`, `git push`, `git add`, or destructive git operations inside the vault — staging via `Edit`/`Write` only. The user owns the vault's git history.
 
-## First-Run Gate (mandatory init)
+## First-Run Gate (init must come before everything else)
 
-**Every `/brain` subcommand except `init` must check vault readiness first.**
+**Every `/brain` subcommand except `init` must check vault readiness first.** If not ready, **refuse** and redirect to `/brain init` — do **not** auto-scaffold from inside another subcommand. Init is its own deliberate step.
 
-A vault is considered **ready** when:
-- The resolved vault path exists as a directory, AND
-- `<vault>/99-meta/system-rules.md` exists (signals scaffold complete)
+A vault is considered **ready** when **both** are true:
 
-If the vault is **not ready**, do this before executing the requested subcommand:
+1. **Path is defined** — at least one of:
+   - `$BRAIN_VAULT` environment variable is set, OR
+   - `~/.brainrc.json` exists with a `vault` key (written by `/brain init`)
+2. **Vault is scaffolded** — `<resolved-path>/99-meta/system-rules.md` exists
 
-1. Print: *"🧠 Vault not initialized. Running `/brain init` first."*
-2. Resolve candidate path (env → config file → default `~/brain`).
-3. Ask the user, one prompt:
-   > *"Create vault at `<path>`? (yes / customize / no)"*
-4. Branch:
-   - **yes** → run the **Init Procedure** below. After scaffold, save the path to `~/.brainrc.json` (only if not already set via `$BRAIN_VAULT`). Then continue with the original subcommand.
-   - **customize** → ask for absolute path. Validate it. Scaffold there. Save to `~/.brainrc.json`. Continue.
-   - **no** → abort the original subcommand. Print: *"Aborted. Run `/brain init` when ready."*
+### Behavior on each case
 
-**Special case:** if the directory exists and has PARA folders but no `system-rules.md`, treat as a partial install — offer to top up missing folders + seed `system-rules.md`, do not overwrite existing files.
+| Case | Action |
+|---|---|
+| Path defined + scaffolded | Proceed with the requested subcommand. |
+| Path defined but **not** scaffolded | Print: *"🧠 Vault path `<path>` exists in your config but isn't scaffolded. Run `/brain init` now? (y/n)"* — on `y`, run init then continue the original subcommand. On `n`, abort. |
+| No path defined (no env var, no config) | Print: *"🧠 No brain vault configured. Run `/brain init` now to point me at your Obsidian vault? (y/n)"* — on `y`, run init then continue. On `n`, abort with hint to set `$BRAIN_VAULT` or run `/brain init` later. |
+| `/brain init` itself | Skip this gate and run directly. |
 
-**`/brain init` itself** skips this gate and runs directly (it *is* the init).
+### Discipline
+
+- **Never silently scaffold** from inside another subcommand. The user must answer `y` to the one-tap prompt — that's the deliberate choice.
+- After successful init, the original subcommand resumes automatically (e.g. `/brain on` after init proceeds to set `BRAIN=on`).
+- If the user answers `n`, abort the original subcommand cleanly. Do not retry the prompt within the same session unless they invoke another subcommand.
 
 ## Session-Start Protocol
 

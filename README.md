@@ -26,31 +26,35 @@ Then restart Claude Code (or run `/reload-plugins`).
 
 ## First run
 
-Just run any `/brain` subcommand. The plugin will detect that the vault doesn't exist yet and walk you through setup automatically:
+**Step 1 — Initialize the vault.** Run `/brain init` once to point the plugin at your Obsidian vault and scaffold the PARA structure:
 
 ```text
-/brain:brain on
+/brain:brain init
 ```
 
-→ *"🧠 Vault not initialized. Running `/brain init` first. Create vault at `~/brain`? (yes / customize / no)"*
+You'll be asked where the vault should live. Default is `~/brain`; pick anything you want (e.g. an existing Obsidian vault path). The chosen path is saved to `~/.brainrc.json` so future sessions remember it.
 
-Reply `yes` to scaffold at the default, `customize` to pick another path, or set `BRAIN_VAULT` upfront:
+To pin the vault path via environment instead, set it before running init:
 
 ```bash
-export BRAIN_VAULT="$HOME/Documents/brain"   # optional
+export BRAIN_VAULT="$HOME/Documents/obsidian/brain"
 ```
 
-The chosen path is saved to `~/.brainrc.json` so future sessions skip the prompt. Init creates 15 PARA folders, copies 9 templates into `08-templates/`, and seeds `99-meta/system-rules.md` (tag taxonomy, naming conventions, weekly review checklist).
+Init creates 15 PARA folders, copies 9 templates into `08-templates/`, and seeds `99-meta/system-rules.md` (tag taxonomy, naming conventions, weekly review checklist).
 
-**(Optional) Initialize git in the vault** so you have history:
+**Step 2 — (Optional) Initialize git in the vault** so you have history:
 
 ```bash
 cd "$BRAIN_VAULT" && git init
 ```
 
-After init runs, the original subcommand executes — so `/brain on` will both scaffold and start tracking in one go.
+**Step 3 — Use any other `/brain` subcommand.** If you skipped step 1, the plugin will refuse and offer a one-tap fix:
 
-**Start a session.** On the first message of any project, the plugin asks:
+> *"🧠 No brain vault configured. Run `/brain init` now? (y/n)"*
+
+Answer `y` and the original subcommand resumes after init.
+
+**Step 4 — Start a session.** On the first message of any project, the plugin asks:
 
 > 🧠 Brain detected at `<vault-path>`. Log this session? (yes / no / later)
 
